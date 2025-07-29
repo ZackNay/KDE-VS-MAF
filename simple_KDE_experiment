@@ -1,0 +1,64 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.neighbors import KernelDensity
+from sklearn.model_selection import GridSearchCV
+np.random.seed(42)
+
+#Gaussian sample generator
+def generate_gaussian_samples(n_samples, dim, mean=0, std=1):
+    return np.random.normal(mean, std, size=(n_samples, dim))
+
+def compute_bandwidth(samples):
+    #Scott method
+    n, d = samples.shape
+    return np.power(n, -1./(d + 4))
+
+#KDE error computation
+def compute_kde_error(samples, dim, n_test=1000):
+    bandwidth = compute_bandwidth(samples)
+    kde = KernelDensity(bandwidth=bandwidth).fit(samples)
+    test_points = np.random.normal(0, 1, size=(n_test, dim))
+    kde_density = np.exp(kde.score_samples(test_points))
+    true_density = np.exp(-np.sum(test_points**2, axis=1) / 2) / ((2 * np.pi)**(dim / 2))
+    error = np.mean(np.abs(kde_density - true_density) / true_density)
+    return error, bandwidth
+
+#Determine required samples for a target error
+def find_required_samples(dim, target_error=0.2, max_samples=500000, start_samples=10, n_experiments=5):
+    samples = start_samples
+    while samples <= max_samples:
+        errors = [compute_kde_error(generate_gaussian_samples(samples, dim), dim)[0] for _ in range(n_experiments)]
+        avg_error = np.mean(errors)
+        if avg_error <= target_error:
+            return samples, avg_error
+        samples = int(samples * 1.5)
+    return max_samples, avg_error
+
+#Main
+def analyze_kde(dims, target_error):
+    results = []
+    for dim in dims:
+        samples, error = find_required_samples(dim, target_error)
+        results.append((dim, samples))
+        print(f"Dim {dim}: {samples} samples")
+    return results
+
+#Visualization
+def plot_results(dims, results,target_error=.2):
+    samples = [x[1] for x in results]
+    plt.figure(figsize=(8, 6))
+    plt.plot(dims, samples, 'o-', color='blue')
+    plt.yscale('log')
+    plt.xlabel('Dimension')
+    plt.ylabel('Required Number of Samples (log scale)')
+    plt.title(f'Samples Needed for a Mean Relative Error of {target_error}')
+    plt.grid(True)
+    
+    for i, sample in enumerate(samples):
+        plt.text(dims[i], sample * 1.15, f'{sample}', fontsize=10, ha='right', color='black')  
+    plt.show()
+
+dims = range(1, 7)
+target_error = 0.2
+results = analyze_kde(dims, target_error)
+plot_results(dims, results)
