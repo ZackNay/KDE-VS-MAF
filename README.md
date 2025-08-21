@@ -31,22 +31,12 @@ The comparison evaluates both methods across:
 ├── main.py                     # Main experiment runner for minimum data size analysis
 ├── kde_experiment.py           # KDE implementation and experiments
 ├── maf_experiment.py          # MAF implementation using normalizing flows
-├── simple_KDE_experiment.py    # Basic KDE analysis
+├── simple_KDE_experiment.py    # KDE analysis
 ├── visual_for_kl_divergence.py # KL divergence visualization
 ├── flow_visual_gif_creation.py # Flow transformation animations
-└── README.md                   # This file
+└── README.md                  
 ```
 
-## Dependencies
-
-- torch
-- numpy
-- matplotlib
-- pandas
-- normflows
-- scipy
-- sklearn
-- tqdm
 
 ## Usage
 
