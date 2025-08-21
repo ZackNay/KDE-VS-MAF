@@ -243,7 +243,7 @@ class KDE:
             
         return self
     
-    def select_bandwidth(self, val_data=None, bandwidths=None):
+    def select_bandwidth(self):
         """
         Select optimal bandwidth using Leave-One-Out Maximum Likelihood Cross-Validation (LOO-MLCV).
         This is the most accurate method for bandwidth selection, prioritizing accuracy over speed.
@@ -527,8 +527,7 @@ class KDEExperiment:
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(seed)
          
-        self.train_ratio = 0.7
-        self.val_ratio = 0.15
+        self.train_ratio = 0.85
         self.test_ratio = 0.15
         
         #Create the output file if it doesn't exist
@@ -583,12 +582,10 @@ class KDEExperiment:
         
         #Calculate split sizes
         train_size = int(total_size * self.train_ratio)
-        val_size = int(total_size * self.val_ratio)
-        test_size = total_size - train_size - val_size
+        test_size = total_size - train_size
         
         #Sample from target distribution for each split
         train_data = target.sample(train_size)
-        val_data = target.sample(val_size)
         test_data = target.sample(test_size)
         
         #Reset seed
@@ -597,10 +594,8 @@ class KDEExperiment:
         #Return all splits
         return {
             'train_data': train_data,
-            'val_data': val_data,
             'test_data': test_data,
             'train_size': train_size,
-            'val_size': val_size,
             'test_size': test_size
         }
     
@@ -614,7 +609,6 @@ class KDEExperiment:
         
         #Unpack data splits
         train_data = data_splits['train_data']
-        val_data = data_splits['val_data']
         
         start_time = time.time()
         
@@ -624,7 +618,7 @@ class KDEExperiment:
         
         #Select optimal bandwidth using validation data
         print(f"Selecting optimal bandwidth using validation data")
-        best_bandwidth = model.select_bandwidth(val_data)
+        best_bandwidth = model.select_bandwidth()
 
         training_time = time.time() - start_time
         
@@ -781,11 +775,10 @@ class KDEExperiment:
         #Set a unique seed for this specific experiment
         experiment_seed = self.seed + hash(distribution_type) % 10000 + dim * 100
         torch.manual_seed(experiment_seed)
-        
+    
 
         print(f"Running KDE experiment for dimension {dim} with {distribution_type} distribution")
 
-        
         #Create target distribution
         target = self.create_target(dim, distribution_type)
         
@@ -795,7 +788,7 @@ class KDEExperiment:
         
         #Generate data splits and train
         data_splits = self.generate_data_splits(dim, total_data_size, target, distribution_type)
-        model = KDE(dim=dim, kernel='epanechnikov')
+        model = KDE(dim=dim)
         
         #Train and select bandwidth
         training_results = self.train_and_select_bandwidth(dim, model, data_splits, distribution_type)
@@ -811,7 +804,6 @@ class KDEExperiment:
             'dimension': dim,
             'distribution_type': distribution_type,
             'train_size': data_splits['train_size'],
-            'val_size': data_splits['val_size'],
             'test_size': data_splits['test_size'],
             'kernel': 'epanechnikov',
             'seed': experiment_seed,
@@ -821,7 +813,6 @@ class KDEExperiment:
         # Save results
         self.save_results_to_excel(results)
         return results
-    
     
     def run_experiments(self, dimensions=None, distribution_types=None):
         """
@@ -837,7 +828,7 @@ class KDEExperiment:
         all_distributions = self.distribution_types
 
         if dimensions is None:
-            dims_to_run = list(range(1, 9))  
+            dims_to_run = list(range(1, 8))  
         elif isinstance(dimensions, tuple) and len(dimensions) == 2:
             start_dim, end_dim = dimensions
             dims_to_run = list(range(start_dim, end_dim + 1))
@@ -893,7 +884,7 @@ if __name__ == "__main__":
     
     #Run a specific dimension and distribution
     #results = experiment.run_experiments(dimensions=5, distribution_types='mixture')
-    
+     
     #Run a range of dimensions
     #results = experiment.run_experiments(dimensions=(1, 3))
     

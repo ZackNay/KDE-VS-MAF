@@ -825,7 +825,7 @@ class MAF_Multidimensional_Comparison_Experiment:
         
         #Process distribution_types parameter
         if distribution_types is None:
-            dists_to_run = all_distributions  ns
+            dists_to_run = all_distributions  
         elif isinstance(distribution_types, str):
             if distribution_types not in all_distributions:
                 raise ValueError(f"Invalid distribution type. Must be one of {all_distributions}")
